@@ -1,0 +1,221 @@
+    <script type="text/javascript" src="xxx/prebid.js"></script>
+    <script> 
+    var PREBID_TIMEOUT = 2000;
+
+    if (window.innerWidth >= 1024) { 
+        // Request bids for desktop ad units
+        // implements Prebid.js and configures at least two demand partners (OpenX and Sovrn).
+        // defines ad units for banner ads and handles responsive designs across mobile and desktop.
+        // integrates with OpenX and Sovrn bid adapters.
+        var adUnits = [{
+             code: 'div-gpt-ad-header-0', // Header ad unit
+             sizes: [[728, 90], [970, 250]],
+             bids: [
+            {
+                bidder: 'OpenX',
+                params: {
+                   tagid: 'xxx' // 728x90
+                }
+            }, {
+                bidder: 'sovrn',
+                params: {
+                   tagid: 'xxx' // 970x250
+                }
+            },
+            ]},
+        {
+            code: 'div-gpt-ad-sidebar-0', // Sidebar ad unit
+            sizes: [[300, 250]],
+            bids: [{
+                bidder: 'OpenX',
+                params: {
+                   tagid: 'xxx' // 300x250
+                }
+            }, {
+                bidder: 'sovrn',
+                params: {
+                    inSlot: 'xxx' // 300x250
+                }
+            }
+            }]
+        }];
+    } else if (window.innerWidth > 720) { // Request bids for tablet ad units
+        var adUnits = [{
+             code: 'div-gpt-ad-header-0', // special tags for Header ad unit
+             sizes: [[728, 90]],
+             bids: [
+            {
+                bidder: 'sovrn',
+                params: {
+                   tagid: 'xxx' // 728x90
+                }
+            }, {
+                bidder: 'Xandr',
+                params: {
+                    inSlot: 'xxx' // 728x90
+                }
+            }
+            }]
+        }];
+    } else { // Request bids for mobile ad units
+        var adUnits = [{
+             code: 'div-gpt-ad-header-0', // Header ad unit
+             sizes: [[320, 50], [320, 100], [300, 250]],
+             bids: [{
+                bidder: 'sovrn',
+                params: {
+                   tagid: 'xxx' // 320x50
+                }
+            }, {
+                bidder: 'sovrn',
+                params: {
+                   tagid: 'xxx' // 320x100
+                }
+            }
+            }]
+        }];
+    }
+
+    var pbjs = pbjs || {};
+    pbjs.que = pbjs.que || [];
+
+    // custom floor price configuration
+    const customConfigObject = {
+      "buckets" : [{
+          "precision": 2,
+          "min" : 0,
+          "max" : 20,
+          "increment" : 0.05
+        }]
+    };
+
+    //set custom config object
+    pbjs.setPriceGranularity(customConfigObject);
+    // basic bid validation
+    pbjs.bidderSettings = {
+    standard: {
+      adserverTargeting: [{
+        key: "hb_bidder",
+        val: function(bidResponse) {
+          return bidResponse.bidderCode;
+        }
+      }, {
+        key: "hb_adid",
+        val: function(bidResponse) {
+          return bidResponse.adId;
+        }
+      }, {
+        key: "hb_pb",
+        val: function(bidResponse) {
+          if(bidResponse.cpm >= 20) return '20.00';
+          return bidResponse.pbHg;
+        }
+      }]
+    },
+      sekindoapn: {
+        bidCpmAdjustment : function(bidCpm){
+          return bidCpm * 0.75;
+        }
+      }
+    };
+    
+    <!-- integrate Google Analytics -->
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+    <script>
+        ga('create', 'UA-XXXXX-Y', 'auto');
+        ga('send', 'pageview');
+
+        // Track bid events
+        googletag.cmd.push(function() {
+            googletag.pubads().addEventListener('slotRenderEnded', function(event) {
+                ga('send', 'event', 'Ad Slot', 'Rendered', event.slot.getSlotElementId());
+        });
+    });
+    </script>
+
+
+    </script>
+    <!-- Prebid Config Section END -->
+
+    <!-- Prebid Boilerplate Section START. No Need to Edit. -->
+    <script>
+    var googletag = googletag || {};
+    googletag.cmd = googletag.cmd || [];
+    googletag.cmd.push(function() {
+        googletag.pubads().disableInitialLoad();
+    });
+    
+    // basic error handling
+    pbjs.que.push(function() {
+        pbjs.addAdUnits(adUnits);
+        pbjs.aliasBidder('appnexus', 'sekindoapn');
+        pbjs.requestBids({
+            bidsBackHandler: sendAdserverRequest
+        });
+    });
+
+    function sendAdserverRequest() {
+        if (pbjs.adserverRequestSent) return;
+        pbjs.adserverRequestSent = true;
+        googletag.cmd.push(function() {
+            pbjs.que.push(function() {
+                pbjs.setTargetingForGPTAsync();
+                googletag.pubads().refresh();
+            });
+        });
+    }
+
+    setTimeout(function() {
+        sendAdserverRequest();
+    }, PREBID_TIMEOUT);
+
+    </script>
+
+    <script type='text/javascript'>
+      var googletag = googletag || {};
+      googletag.cmd = googletag.cmd || [];        
+      (function() {
+        var gads = document.createElement('script');
+        gads.async = true;
+        gads.type = 'text/javascript';
+        var useSSL = 'https:' == document.location.protocol;
+        gads.src = (useSSL ? 'https:' : 'http:') +
+          '//www.googletagservices.com/tag/js/gpt.js';
+        var node = document.getElementsByTagName('script')[0];
+        node.parentNode.insertBefore(gads, node);
+      })();
+    </script>
+
+    <script type='text/javascript'>
+      googletag.cmd.push(function() {
+        var gptAdSlots = [];
+
+        var headerMap = googletag.sizeMapping().
+            // Desktop
+            addSize([1024, 200], [[728, 90], [970, 250]]).
+            // Tablet
+            addSize([720, 200], [728, 90]).
+            // Mobile
+            addSize([0,0], [[320, 50], [320, 100], [300, 250]]).
+            build();
+
+        var sidebarMap = googletag.sizeMapping().
+            // Desktop, Landscape Tablet
+            addSize([1024, 200], [300, 250]).
+            // Mobile, Portrait Tablet
+            addSize([0,0], []).
+            build();
+
+        gptAdSlots[0] = googletag.defineSlot('/xxx/Site_Header', [320,50], 'div-gpt-ad-header-0').
+          defineSizeMapping(headerMap).
+          setCollapseEmptyDiv(true).
+          addService(googletag.pubads());
+
+        gptAdSlots[1] = googletag.defineSlot('/xxx/Site_Sidebar', [300, 250], 'div-gpt-ad-sidebar-0').
+          defineSizeMapping(sidebarMap).
+          setCollapseEmptyDiv(true).
+          addService(googletag.pubads());
+
+        googletag.enableServices();
+      });
+    </script>
