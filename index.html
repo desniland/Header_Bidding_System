@@ -78,7 +78,13 @@
 
     var pbjs = pbjs || {};
     pbjs.que = pbjs.que || [];
-
+    
+    pbjs.que.push(function() {
+        pbjs.addAdUnits(adUnits);
+        pbjs.requestBids({
+            bidsBackHandler: sendAdserverRequest
+        });
+    });
     // custom floor price configuration
     const customConfigObject = {
       "buckets" : [{
@@ -144,8 +150,16 @@
     googletag.cmd.push(function() {
         googletag.pubads().disableInitialLoad();
     });
-    
+
+
+    pbjs.onEvent('bidTimeout', function(bid) {
+        console.error('Bid timed out:', bid);
+    });
+    pbjs.onEvent('bidWon', function(bid) {
+        console.log('Bid won:', bid);
+    });
     // basic error handling
+    
     pbjs.que.push(function() {
         pbjs.addAdUnits(adUnits);
         pbjs.aliasBidder('appnexus', 'sekindoapn');
@@ -165,6 +179,30 @@
         });
     }
 
+    pbjs.bidderSettings = {
+        standard: {
+            adserverTargeting: [
+                { key: "hb_bidder", val: function(bidResponse) { return bidResponse.bidderCode; } },
+                { key: "hb_adid", val: function(bidResponse) { return bidResponse.adId; } },
+                { key: "hb_pb", val: function(bidResponse) { return bidResponse.pbHg; } }
+            ]
+        }
+    };
+
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                googletag.cmd.push(function() {
+                    googletag.pubads().refresh([entry.target]);
+                });
+                observer.unobserve(entry.target);
+            }
+        });
+    });
+    document.querySelectorAll('.ad-slot').forEach(function(adSlot) {
+  observer.observe(adSlot);
+  });
+    
     setTimeout(function() {
         sendAdserverRequest();
     }, PREBID_TIMEOUT);
